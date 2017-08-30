@@ -395,7 +395,7 @@ class SymbolBucket implements Bucket {
         const globalProperties =  {zoom: this.zoom};
 
         for (const {feature, index, sourceLayerIndex} of features) {
-            if (!layer.filter(feature)) {
+            if (!layer._featureFilter(globalProperties, feature)) {
                 continue;
             }
 
