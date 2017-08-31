@@ -86,7 +86,7 @@ test('==, null', (t) => {
     t.equal(f({zoom: 0}, {properties: {foo: true}}), false);
     t.equal(f({zoom: 0}, {properties: {foo: false}}), false);
     t.equal(f({zoom: 0}, {properties: {foo: null}}), true);
-    t.equal(f({zoom: 0}, {properties: {foo: undefined}}), false);
+    t.equal(f({zoom: 0}, {properties: {foo: undefined}}), true);
     t.equal(f({zoom: 0}, {properties: {}}), false);
     t.end();
 });
@@ -136,7 +136,7 @@ test('!=, null', (t) => {
     t.equal(f({zoom: 0}, {properties: {foo: true}}), true);
     t.equal(f({zoom: 0}, {properties: {foo: false}}), true);
     t.equal(f({zoom: 0}, {properties: {foo: null}}), false);
-    t.equal(f({zoom: 0}, {properties: {foo: undefined}}), true);
+    t.equal(f({zoom: 0}, {properties: {foo: undefined}}), false);
     t.equal(f({zoom: 0}, {properties: {}}), true);
     t.end();
 });
@@ -308,7 +308,7 @@ test('in, null', (t) => {
     t.equal(f({zoom: 0}, {properties: {foo: true}}), false);
     t.equal(f({zoom: 0}, {properties: {foo: false}}), false);
     t.equal(f({zoom: 0}, {properties: {foo: null}}), true);
-    t.equal(f({zoom: 0}, {properties: {foo: undefined}}), false);
+    t.equal(f({zoom: 0}, {properties: {foo: undefined}}), true);
     t.end();
 });
 
@@ -373,7 +373,7 @@ test('!in, null', (t) => {
     t.equal(f({zoom: 0}, {properties: {foo: 0}}), true);
     t.equal(f({zoom: 0}, {properties: {foo: '0'}}), true);
     t.equal(f({zoom: 0}, {properties: {foo: null}}), false);
-    t.equal(f({zoom: 0}, {properties: {foo: undefined}}), true);
+    t.equal(f({zoom: 0}, {properties: {foo: undefined}}), false);
     t.end();
 });
 

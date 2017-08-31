@@ -93,7 +93,7 @@ module.exports = () => ({
     },
 
     typeOf: function (x: Value): string {
-        return toString(typeOf(x));
+        return toString(typeOf(typeof x === 'undefined' ? null : x));
     },
 
     asJSType: function (expectedType: string, args: Array<()=>Value>) {

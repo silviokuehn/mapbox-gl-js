@@ -2,8 +2,8 @@
 
 const compileExpression = require('../function/compile');
 const {BooleanType} = require('../function/types');
+const {typeOf} = require('../function/values');
 
-import type {Feature} from '../function';
 export type FeatureFilter = (globalProperties: {+zoom?: number}, feature: VectorTileFeature) => boolean;
 
 module.exports = createFilter;
@@ -19,23 +19,19 @@ module.exports = createFilter;
  */
 function createFilter(filter: any): FeatureFilter {
     if (!filter) {
-        return (globalProperties, _: VectorTileFeature) => true;
+        return () => true;
     }
 
-    let expression = Array.isArray(filter) ? convertFilter(filter) : filter.expression;
-    if (Array.isArray(expression) && expression[0] !== 'coalesce') {
-        expression = ['coalesce', expression, false];
-    }
+    const expression = Array.isArray(filter) ? convertFilter(filter) : filter.expression;
     const compiled = compileExpression(expression, BooleanType);
 
     if (compiled.result === 'success') {
-        return (globalProperties, feature: VectorTileFeature) => {
-            const expressionFeature: Feature = {
-                properties: feature.properties || {},
-                type: feature.type,
-                id: typeof feature.id !== 'undefined' ? feature.id : null
-            };
-            return compiled.function(globalProperties, expressionFeature);
+        return (g, f) => {
+            try {
+                return compiled.function(g, f);
+            } catch (e) {
+                return false;
+            }
         };
     } else {
         throw new Error(compiled.errors.map(err => `${err.key}: ${err.message}`).join(', '));
@@ -53,9 +49,9 @@ function convertFilter(filter: ?Array<any>): mixed {
         op === '>' ||
         op === '<=' ||
         op === '>=' ? compileComparisonOp(filter[1], filter[2], op) :
-        op === 'any' ? compileLogicalOp(filter.slice(1), '||') :
-        op === 'all' ? compileLogicalOp(filter.slice(1), '&&') :
-        op === 'none' ? compileNegation(compileLogicalOp(filter.slice(1), '||')) :
+        op === 'any' ? compileDisjunctionOp(filter.slice(1)) :
+        op === 'all' ? ['&&'].concat(filter.slice(1).map(convertFilter)) :
+        op === 'none' ? ['&&'].concat(filter.slice(1).map(convertFilter).map(compileNegation)) :
         op === 'in' ? compileInOp(filter[1], filter.slice(2)) :
         op === '!in' ? compileNegation(compileInOp(filter[1], filter.slice(2))) :
         op === 'has' ? compileHasOp(filter[1]) :
@@ -71,20 +67,36 @@ function compilePropertyReference(property: string, type?: ?string) {
 }
 
 function compileComparisonOp(property: string, value: any, op: string) {
-    const fallback = op === '!=';
+    const type = typeOf(value).kind;
+    const untypedReference = compilePropertyReference(property);
+    const typedReference = compilePropertyReference(property, typeof value);
+
     if (value === null) {
+        const expression = [
+            '&&',
+            compileHasOp(property),
+            ['==', ['typeof', untypedReference], 'Null']
+        ];
+        return op === '!=' ? ['!', expression] : expression;
+    }
+
+    if (op === '!=') {
         return [
-            'coalesce',
-            [op, ['typeof', compilePropertyReference(property)], 'Null'],
-            fallback
+            '||',
+            ['!=', ['typeof', untypedReference], type],
+            ['!=', typedReference, value]
         ];
     }
-    const ref = compilePropertyReference(property, typeof value);
-    return ['coalesce', [op, ref, value], fallback];
+
+    return [
+        '&&',
+        ['==', ['typeof', untypedReference], type],
+        [op, typedReference, value]
+    ];
 }
 
-function compileLogicalOp(expressions: Array<Array<any>>, op: string) {
-    return [op].concat(expressions.map(convertFilter));
+function compileDisjunctionOp(filters: Array<Array<any>>) {
+    return ['||'].concat(filters.map(convertFilter));
 }
 
 function compileInOp(property: string, values: Array<any>) {
@@ -93,17 +105,26 @@ function compileInOp(property: string, values: Array<any>) {
     }
 
     const input = compilePropertyReference(property);
-    return ["coalesce", ["contains", input, ["array", ["literal", values]]], false];
+    return [
+        '&&',
+        compileHasOp(property),
+        ["contains", input, ["array", ["literal", values]]]
+    ];
 }
 
 function compileHasOp(property: string) {
-    const has = property === '$id' ?
-        ['!=', ['typeof', ['id']], 'Null'] :
-        ['has', property];
-    return has;
+    if (property === '$id') {
+        return ['!=', ['typeof', ['id']], 'Null'];
+    }
+
+    if (property === '$type') {
+        return true;
+    }
+
+    return ['has', property];
 }
 
-function compileNegation(filter: boolean | Array<any>) {
+function compileNegation(filter: mixed) {
     return ['!', filter];
 }
 
