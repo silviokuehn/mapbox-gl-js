@@ -176,6 +176,15 @@ class Painter {
         this.rasterBoundsBuffer = new VertexBuffer(gl, rasterBoundsArray);
         this.rasterBoundsVAO = new VertexArrayObject();
 
+        // used if raster-terrain tile isn't fully backfilled in order to prevent seams with missing data from flashing
+         const incompleteHillshadeBoundsArray = new RasterBoundsArray();
+         incompleteHillshadeBoundsArray.emplaceBack(0, 0, 0, 0);
+         incompleteHillshadeBoundsArray.emplaceBack(EXTENT - (2 * EXTENT / 512), 0, EXTENT - (2 * EXTENT / 512), 0);
+         incompleteHillshadeBoundsArray.emplaceBack(0, EXTENT - (2 * EXTENT / 512), 0, EXTENT - (2 * EXTENT / 512));
+         incompleteHillshadeBoundsArray.emplaceBack(EXTENT - (2 * EXTENT / 512), EXTENT - (2 * EXTENT / 512), EXTENT - (2 * EXTENT / 512), EXTENT - (2 * EXTENT / 512));
+         this.incompleteHillshadeBoundsBuffer = new VertexBuffer(gl, incompleteHillshadeBoundsArray);
+         this.incompleteHillshadeBoundsVAO = new VertexArrayObject();
+
         this.extTextureFilterAnisotropic = (
             gl.getExtension('EXT_texture_filter_anisotropic') ||
             gl.getExtension('MOZ_EXT_texture_filter_anisotropic') ||
