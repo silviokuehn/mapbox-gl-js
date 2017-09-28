@@ -8,7 +8,7 @@ const Curve = require('../style-spec/expression/definitions/curve');
 
 import type {StyleExpression, Feature} from '../style-spec/expression';
 
-function normalizeToExpression(parameters, propertySpec): StyleExpression {
+function normalizeToExpression(parameters, propertySpec, name): StyleExpression {
     if (typeof parameters === 'string' && propertySpec.type === 'color') {
         const color = parseColor(parameters);
         return {
@@ -29,7 +29,7 @@ function normalizeToExpression(parameters, propertySpec): StyleExpression {
     if (parameters.expression) {
         return createExpression(parameters.expression, propertySpec);
     } else {
-        return createFunction(parameters, propertySpec);
+        return createFunction(parameters, propertySpec, name);
     }
 }
 
@@ -43,14 +43,14 @@ class StyleDeclaration {
     minimum: number;
     expression: StyleExpression;
 
-    constructor(reference: any, value: any) {
+    constructor(reference: any, value: any, name: string) {
         this.value = util.clone(value);
 
         // immutable representation of value. used for comparison
         this.json = JSON.stringify(this.value);
 
         this.minimum = reference.minimum;
-        this.expression = normalizeToExpression(this.value, reference);
+        this.expression = normalizeToExpression(this.value, reference, name);
     }
 
     calculate(globalProperties: {+zoom?: number} = {}, feature?: Feature) {
