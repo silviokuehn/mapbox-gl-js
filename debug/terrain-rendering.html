@@ -81,6 +81,9 @@ var map = window.map = new mapboxgl.Map({
     }
 });
 map.on('load', ()=> {
+    map.on('click', () => {
+        map.setZoom(map.getZoom()  > 10 ? 10 : 11);
+    })
     // map.addSource('rasterTerrain',
     // {
     //     "type": "raster-terrain",

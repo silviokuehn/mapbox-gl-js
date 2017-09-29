@@ -33,11 +33,11 @@ function drawHillshade(painter: Painter, sourceCache: SourceCache, layer: StyleL
 
     for (const coord of coords) {
         const tile = sourceCache.getTile(coord);
-        if (!tile.texture && painter.renderPass === 'hillshadeprepare') {
+        if (!tile.texture && painter.renderPass === 'translucent') {
             prepareHillshade(painter, tile);
             continue;
         }
-        if (painter.renderPass === 'translucent') {
+        if (painter.renderPass === 'translucent' && false) {
             let bordersLoaded = true;
             if (painter.transform.tileZoom < maxzoom) {
                 for (const key in tile.neighboringTiles) {
@@ -87,7 +87,7 @@ function renderHillshade(painter, tile, layer, bordersLoaded) {
     gl.uniformMatrix4fv(program.uniforms.u_matrix, false, posMatrix);
     gl.uniform2fv(program.uniforms.u_latrange, latRange);
     gl.uniform1i(program.uniforms.u_image, 0);
-    gl.uniform1i(program.uniforms.u_mode, 1);
+    gl.uniform1i(program.uniforms.u_mode, 0);
     gl.uniform4fv(program.uniforms.u_shadow, layer.paint["hillshade-shadow-color"]);
     gl.uniform4fv(program.uniforms.u_highlight, layer.paint["hillshade-highlight-color"]);
     gl.uniform4fv(program.uniforms.u_accent, layer.paint["hillshade-accent-color"]);
@@ -130,17 +130,20 @@ function prepareHillshade(painter, tile) {
             return RGBAImage.create({width: l.width + 2 * l.border, height: l.height + 2 * l.border}, new Uint8Array(l.data.buffer));
         });
 
-        gl.activeTexture(gl.TEXTURE1);
+        tile.pixelData = pixelData[0];
+
+        gl.activeTexture(gl.TEXTURE0);
         const dem = new Texture(gl, pixelData[0], gl.RGBA, false);
         dem.bind(gl.NEAREST, gl.CLAMP_TO_EDGE);
 
-        gl.activeTexture(gl.TEXTURE0);
-        const hillshadeTexture = new RenderTexture(painter, TERRAIN_TILE_WIDTH, TERRAIN_TILE_HEIGHT);
-        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, (false: any));
-        gl.viewport(0, 0, TERRAIN_TILE_WIDTH, TERRAIN_TILE_HEIGHT);
+        // gl.activeTexture(gl.TEXTURE0);
+        // const hillshadeTexture = new RenderTexture(painter, TERRAIN_TILE_WIDTH, TERRAIN_TILE_HEIGHT);
+        // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, (false: any));
+        // gl.viewport(0, 0, TERRAIN_TILE_WIDTH, TERRAIN_TILE_HEIGHT);
 
-        tile.texture = hillshadeTexture.texture;
+        // tile.texture = hillshadeTexture.texture;
 
+        const posMatrix = painter.transform.calculatePosMatrix(tile.coord);
         const matrix = mat4.create();
         // Flip rendering at y axis.
         mat4.ortho(matrix, 0, EXTENT, -EXTENT, 0, 0, 1);
@@ -148,10 +151,11 @@ function prepareHillshade(painter, tile) {
 
         const program = painter.useProgram('hillshadePrepare');
 
-        gl.uniformMatrix4fv(program.uniforms.u_matrix, false, matrix);
+        // gl.uniformMatrix4fv(program.uniforms.u_matrix, false, matrix);
+        gl.uniformMatrix4fv(program.uniforms.u_matrix, false, posMatrix);
         gl.uniform1f(program.uniforms.u_zoom, tile.coord.z);
         gl.uniform2fv(program.uniforms.u_dimension, [512, 512]);
-        gl.uniform1i(program.uniforms.u_image, 1);
+        gl.uniform1i(program.uniforms.u_image, 0);
 
         const buffer = painter.rasterBoundsBuffer;
         const vao = painter.rasterBoundsVAO;
@@ -159,8 +163,8 @@ function prepareHillshade(painter, tile) {
         vao.bind(gl, program, buffer);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, buffer.length);
 
-        hillshadeTexture.unbind();
-        gl.viewport(0, 0, painter.width, painter.height);
+        // hillshadeTexture.unbind();
+        // gl.viewport(0, 0, painter.width, painter.height);
 
     }
 }

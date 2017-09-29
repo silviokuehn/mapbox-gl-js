@@ -37,12 +37,14 @@ void main() {
         // decrease the value u_zoom is subtracted from to intensify terrain appearance
     ) / ((u_zoom > 9.0) ? pow(2.0, 13.5 - u_zoom * 0.5) : pow(2.0, 14.0 - u_zoom * 0.5));
 
+    vec4 rawdata = texture2D(u_image, v_pos);
+    gl_FragColor = vec4(rawdata.rgb, 0.5);
 
-    gl_FragColor = clamp(vec4(
-        deriv.x / 2.0 + 0.5,
-        deriv.y / 2.0 + 0.5,
-        1.0,
-        1.0), 0.0, 1.0);
+    // gl_FragColor = clamp(vec4(
+    //     deriv.x / 2.0 + 0.5,
+    //     deriv.y / 2.0 + 0.5,
+    //     1.0,
+    //     1.0), 0.0, 1.0);
 
 #ifdef OVERDRAW_INSPECTOR
     gl_FragColor = vec4(1.0);
